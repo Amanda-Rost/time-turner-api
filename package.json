@@ -10,6 +10,10 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@prisma/client": "^7.0.0",
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "prisma": "^7.0.0"
   }
 }
