@@ -8,7 +8,9 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"time-turner-api/internal/domain/entities"
+	"time-turner-api/internal/domain/user"
+	"time-turner-api/internal/domain/task"
+	"time-turner-api/internal/domain/share"
 )
 
 func main() {
@@ -20,7 +22,7 @@ func main() {
 	}
 
 	// 2. Executar Auto-migração das Entidades (substitui o Prisma Migrate)
-	db.AutoMigrate(&entities.Usuario{}, &entities.Tarefa{}, &entities.Compartilhamento{})
+	db.AutoMigrate(&user.User{}, &task.Task{}, &share.Share{})
 
 	// 3. Inicializar o Roteador HTTP (Gin)
 	r := gin.Default()
