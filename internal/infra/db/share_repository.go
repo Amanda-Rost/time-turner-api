@@ -34,7 +34,7 @@ func (r *shareGormRepository) FindAll(ctx context.Context) ([]*share.Share, erro
 	return shares, nil
 }
 
-func (r *shareGormRepository) FindByID(ctx context.Context, id string) (*share.Share, error) {
+func (r *shareGormRepository) FindById(ctx context.Context, id string) (*share.Share, error) {
 	var s share.Share
 	err := r.db.WithContext(ctx).Preload("User").Preload("Task").First(&s, "id = ?", id).Error
 	if err != nil {
@@ -43,19 +43,18 @@ func (r *shareGormRepository) FindByID(ctx context.Context, id string) (*share.S
 	return &s, nil
 }
 
-
-func (r *shareGormRepository) FindByUserID(ctx context.Context, userID string) ([]*share.Share, error) {
+func (r *shareGormRepository) FindByUserId(ctx context.Context, userId string) ([]*share.Share, error) {
 	var shares []*share.Share
-	err := r.db.WithContext(ctx).Preload("Task").Where("user_id = ?", userID).Find(&shares).Error
+	err := r.db.WithContext(ctx).Preload("Task").Where("user_id = ?", userId).Find(&shares).Error
 	if err != nil {
 		return nil, err
 	}
 	return shares, nil
 }
 
-func (r *shareGormRepository) FindByTaskID(ctx context.Context, taskID string) ([]*share.Share, error) {
+func (r *shareGormRepository) FindByTaskId(ctx context.Context, taskId string) ([]*share.Share, error) {
 	var shares []*share.Share
-	err := r.db.WithContext(ctx).Preload("User").Where("task_id = ?", taskID).Find(&shares).Error
+	err := r.db.WithContext(ctx).Preload("User").Where("task_id = ?", taskId).Find(&shares).Error
 	if err != nil {
 		return nil, err
 	}

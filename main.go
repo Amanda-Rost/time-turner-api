@@ -3,40 +3,56 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/joho/godotenv"
 
-	"time-turner-api/internal/domain/user"
-	"time-turner-api/internal/domain/task"
-	"time-turner-api/internal/domain/share"
+	"time-turner-api/internal/infra/db"
 )
 
 func main() {
-	// 1. Configurar Conexão com o Banco de Dados
-	dsn := "host=localhost user=postgres password=postgres dbname=timeturner port=5432 sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("Falha ao conectar no banco de dados: %v", err)
+	if err := godotenv.Load(); err != nil {
+		log.Println("Aviso: Arquivo .env não encontrado, utilizando variáveis de ambiente do sistema")
 	}
 
-	// 2. Executar Auto-migração das Entidades (substitui o Prisma Migrate)
-	db.AutoMigrate(&user.User{}, &task.Task{}, &share.Share{})
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = "host=localhost user=postgres password=postgres dbname=timeturner port=5432 sslmode=disable"
+	}
 
-	// 3. Inicializar o Roteador HTTP (Gin)
+	database, err := db.ConnectPostgres(dsn)
+	if err != nil {
+		log.Fatalf("Falha ao inicializar o banco de dados: %v", err)
+	}
+
+	// instancia os repositórios injetando a conexão
+	userRepo := db.NewUserRepository(database)
+	taskRepo := db.NewTaskRepository(database)
+	shareRepo := db.NewShareRepository(database)
+
+	_ = userRepo
+	_ = taskRepo
+	_ = shareRepo
+
+	// cria a instância do servidor e ativa automaticamente dois middlewares
+	// Logger e Recovery
 	r := gin.Default()
 
-	// 4. Rota Healthcheck de Exemplo
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "API executando em Go!",
 		})
 	})
 
-	// 5. Iniciar o Servidor na porta 8080
-	log.Println("Servidor Go rodando na porta :8080")
-	if err := r.Run(":8080"); err != nil {
+	// inicia servidor
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Servidor Go rodando na porta :%s", port)
+	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Erro ao iniciar servidor: %v", err)
 	}
 }
