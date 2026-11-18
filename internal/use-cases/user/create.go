@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 	"time-turner-api/internal/domain/user"
-	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -98,63 +97,11 @@ func NewCreateUserUseCase(repo user.UserRepository) *CreateUserUseCase {
 	}
 }
 
-func validatePasswordFormat(password string) error {
-	if len(password) < 8 {
-		return errors.New("A senha deve ter no minimo 8 caracteres")
-	}
-
-	var (
-		hasUpper     bool = false
-		hasLower     bool = false
-		hasNumber    bool = false
-		hasSpecial   bool = false
-		missingItems []string
-
-	)
-
-	// O range percorre a coleção entregando o índice e o valor a cada iteração, enquanto 
-	// o _ descarta o índice retornado para evitar erros de compilação por variáveis não 
-	// utilizadas.
-	for _, char := range password {
-		switch {
-		// O unicode é um pacote nativo da biblioteca padrão do Go que fornece funções 
-		// para analisar a categoria e as propriedades de um caractere
-		case unicode.IsUpper(char):
-			hasUpper = true
-		case unicode.IsLower(char):
-			hasLower = true
-		case unicode.IsNumber(char):
-			hasNumber = true
-		case unicode.IsPunct(char) || unicode.IsSymbol(char):
-			hasSpecial = true 
-		}
-	}
-
-	if !hasUpper {
-		missingItems = append(missingItems, "pelo menos uma letra maiuscula")
-	}
-	if !hasLower {
-		missingItems = append(missingItems, "pelo menos uma letra minuscula")
-	}
-	if !hasNumber {
-		missingItems = append(missingItems, "pelo menos um numero")
-	}
-	if !hasSpecial {
-		missingItems = append(missingItems, "pelo menos um caractere especial (ex: !@#$%^&*)")
-	}
-
-	if len(missingItems) > 0 {
-		return errors.New("a senha deve conter: " + strings.Join(missingItems, ", "))
-	}
-
-	return nil
-}
-
 // O (uc *CreateUserUseCase) é o jeito de mostrar que esse metodo pertece aquela classe
 func (uc *CreateUserUseCase) Execute(ctx context.Context, input CreateUserInput) (*CreateUserOutput, error) {
 	// O strings.TrimSpace remove os espaços em branco do início e do fim de uma string
 	name := strings.TrimSpace(input.Name)
-	email := strings.TrimSpace(input.Email)
+	email := strings.TrimSpace(strings.ToLower(input.Email))
 
 	if name == "" {
 		return nil, errors.New("É obrigatorio o usuario ter um nome")
@@ -163,7 +110,8 @@ func (uc *CreateUserUseCase) Execute(ctx context.Context, input CreateUserInput)
 		return nil, errors.New("É obrigatorio o usuario ter um email")
 	}
 
-	if err := validatePasswordFormat(input.Password); err !=nil {
+	validPassword, err := user.NewPassword(input.Password)
+	if err != nil {
 		return nil, err
 	}
 
@@ -175,7 +123,7 @@ func (uc *CreateUserUseCase) Execute(ctx context.Context, input CreateUserInput)
 
 	// Gera um hash seguro da senha usando o algoritmo bcrypt com sal (salt) automático 
 	// e custo computacional padrão.
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(validPassword.Value()), bcrypt.DefaultCost)
 	
 	if err != nil {
     	return nil, err
